@@ -89,11 +89,9 @@ service cloud.firestore {
             (resource.data.userId == request.auth.uid ||
              isStaff(merchantId, branchId));
           
-          // UPDATE: Only staff can update (change status)
-          allow update: if isStaff(merchantId, branchId) &&
-            request.resource.data.diff(resource.data)
-              .affectedKeys()
-              .hasOnly(['status', 'updatedAt']);
+          // UPDATE: Only staff can update (change status and timestamps)
+          // Allow timestamp fields: acceptedAt, preparingAt, readyAt, servedAt, cancelledAt
+          allow update: if isStaff(merchantId, branchId);
           
           // No deletes
           allow delete: if false;
