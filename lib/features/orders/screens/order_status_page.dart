@@ -14,153 +14,183 @@ class OrderStatusPage extends ConsumerWidget {
     final stream = ref.watch(orderServiceProvider).watchOrder(orderId);
     final cs = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Order Status'),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        scrolledUnderElevation: 0,
-      ),
-      body: StreamBuilder<Order>(
-        stream: stream,
-        builder: (context, snap) {
-          if (snap.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Failed to load order.\n${snap.error}',
-                  textAlign: TextAlign.center,
+    return StreamBuilder<Order>(
+      stream: stream,
+      builder: (context, snap) {
+        if (snap.hasError || !snap.hasData) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Order Status'),
+              centerTitle: true,
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              scrolledUnderElevation: 0,
+            ),
+            body: snap.hasError
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Failed to load order.\n${snap.error}',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final order = snap.data!;
+        final finished = order.status == OrderStatus.served ||
+            order.status == OrderStatus.cancelled;
+
+        return PopScope(
+          canPop: !finished,
+          onPopInvoked: (didPop) {
+            if (!didPop && finished) {
+              // When order is finished, navigate back to menu (pop to root)
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+          },
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Order Status'),
+              centerTitle: true,
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              scrolledUnderElevation: 0,
+              leading: finished
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        // Navigate back to menu (pop to root)
+                        Navigator.of(context).popUntil((route) => route.isFirst);
+                      },
+                    )
+                  : null,
+            ),
+            body: _buildBody(context, order, cs, finished),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBody(BuildContext context, Order order, ColorScheme cs, bool finished) {
+    // Soft, theme-safe tints (very transparent)
+    final servedBg = const Color(0xFF22C55E).withOpacity(0.12);
+    final servedBorder = const Color(0xFF22C55E).withOpacity(0.22);
+    final cancelBg = const Color(0xFFEF4444).withOpacity(0.12);
+    final cancelBorder = const Color(0xFFEF4444).withOpacity(0.22);
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          _StatusPills(status: order.status),
+          const SizedBox(height: 12),
+
+          if (finished)
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: order.status == OrderStatus.cancelled
+                    ? cancelBg
+                    : servedBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: order.status == OrderStatus.cancelled
+                      ? cancelBorder
+                      : servedBorder,
                 ),
               ),
-            );
-          }
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+              child: Text(
+                order.status == OrderStatus.cancelled
+                    ? 'This order was cancelled.'
+                    : 'Enjoy! This order has been served.',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface.withOpacity(0.9),
+                ),
+              ),
+            ),
 
-          final order = snap.data!;
-          final finished = order.status == OrderStatus.served ||
-              order.status == OrderStatus.cancelled;
+          if (finished) const SizedBox(height: 12),
 
-          // Soft, theme-safe tints (very transparent)
-          final servedBg = const Color(0xFF22C55E).withOpacity(0.12);
-          final servedBorder = const Color(0xFF22C55E).withOpacity(0.22);
-          final cancelBg = const Color(0xFFEF4444).withOpacity(0.12);
-          final cancelBorder = const Color(0xFFEF4444).withOpacity(0.22);
-
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                _StatusPills(status: order.status),
-                const SizedBox(height: 12),
-
-                if (finished)
-                  Container(
-                    width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: order.status == OrderStatus.cancelled
-                          ? cancelBg
-                          : servedBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: order.status == OrderStatus.cancelled
-                            ? cancelBorder
-                            : servedBorder,
-                      ),
-                    ),
-                    child: Text(
-                      order.status == OrderStatus.cancelled
-                          ? 'This order was cancelled.'
-                          : 'Enjoy! This order has been served.',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: cs.onSurface.withOpacity(0.9),
-                      ),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Text('Order ',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    order.orderNo,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const Spacer(),
+                  Text(
+                    order.subtotal.toStringAsFixed(3), // BHD, 3dp
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: cs.onSurface,
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
 
-                if (finished) const SizedBox(height: 12),
+          Expanded(
+            child: ListView.separated(
+              itemCount: order.items.length,
+              separatorBuilder: (_, __) =>
+                  Divider(height: 1, color: cs.outlineVariant),
+              itemBuilder: (context, i) {
+                final it = order.items[i];
+                final note = (it.note ?? '').trim();
+                final hasNote = note.isNotEmpty;
 
-                Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
+                return ListTile(
+                  title: Text(
+                    it.name,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [
-                        Text('Order ',
-                            style: Theme.of(context).textTheme.titleMedium),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(it.price.toStringAsFixed(3)),
+                      if (hasNote) ...[
+                        const SizedBox(height: 2),
                         Text(
-                          order.orderNo,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        const Spacer(),
-                        Text(
-                          order.subtotal.toStringAsFixed(3), // BHD, 3dp
+                          '📝 $note',
                           style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: cs.onSurface,
+                            fontStyle: FontStyle.italic,
+                            color: cs.onSurface.withOpacity(0.85),
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 12),
-
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: order.items.length,
-                    separatorBuilder: (_, __) =>
-                        Divider(height: 1, color: cs.outlineVariant),
-                    itemBuilder: (context, i) {
-                      final it = order.items[i];
-                      final note = (it.note ?? '').trim();
-                      final hasNote = note.isNotEmpty;
-
-                      return ListTile(
-                        title: Text(
-                          it.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(it.price.toStringAsFixed(3)),
-                            if (hasNote) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                '📝 $note',
-                                style: TextStyle(
-                                  fontStyle: FontStyle.italic,
-                                  color: cs.onSurface.withOpacity(0.85),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        trailing: Text('x${it.qty}'),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                  trailing: Text('x${it.qty}'),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

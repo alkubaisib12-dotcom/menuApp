@@ -104,6 +104,9 @@ class _CartSheetState extends ConsumerState<CartSheet> {
 
       // NOTE: Points are awarded when order is marked as 'served' in merchant dashboard
 
+      // Clear the cart after successful order
+      ref.read(cartControllerProvider.notifier).clear();
+
       // Navigate to order status
       if (context.mounted) {
         Navigator.of(context).maybePop();
