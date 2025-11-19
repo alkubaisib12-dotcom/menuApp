@@ -31,16 +31,29 @@ class LoyaltyCheckoutWidget extends ConsumerStatefulWidget {
 }
 
 class _LoyaltyCheckoutWidgetState extends ConsumerState<LoyaltyCheckoutWidget> {
-  final _phoneController = TextEditingController();
+  final _countryCodeController = TextEditingController(text: '+973');
+  final _phoneNumberController = TextEditingController();
   final _carPlateController = TextEditingController();
   final _pointsController = TextEditingController(text: '0');
 
   @override
   void dispose() {
-    _phoneController.dispose();
+    _countryCodeController.dispose();
+    _phoneNumberController.dispose();
     _carPlateController.dispose();
     _pointsController.dispose();
     super.dispose();
+  }
+
+  int _getMaxDigits(String countryCode) {
+    switch (countryCode) {
+      case '+973': // Bahrain
+        return 8;
+      case '+966': // Saudi Arabia
+        return 9;
+      default:
+        return 10;
+    }
   }
 
   @override
@@ -72,19 +85,48 @@ class _LoyaltyCheckoutWidgetState extends ConsumerState<LoyaltyCheckoutWidget> {
             const SizedBox(height: 16),
 
             // Phone Number Input (ALWAYS REQUIRED)
-            TextField(
-              controller: _phoneController,
-              decoration: const InputDecoration(
-                labelText: 'Phone Number',
-                hintText: '+973 XXXX XXXX',
-                prefixIcon: Icon(Icons.phone),
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.phone,
-              onChanged: (value) {
-                ref.read(checkoutPhoneProvider.notifier).state = value;
-                _updateCheckoutData(settings);
-              },
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Country Code
+                SizedBox(
+                  width: 100,
+                  child: TextField(
+                    controller: _countryCodeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Code',
+                      prefixIcon: Icon(Icons.flag, size: 20),
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.phone,
+                    onChanged: (value) {
+                      setState(() {}); // Rebuild to update max digits
+                      _updateCheckoutData(settings);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Phone Number
+                Expanded(
+                  child: TextField(
+                    controller: _phoneNumberController,
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+                      hintText: '${'X' * _getMaxDigits(_countryCodeController.text)}',
+                      prefixIcon: const Icon(Icons.phone),
+                      border: const OutlineInputBorder(),
+                      helperText: '${_getMaxDigits(_countryCodeController.text)} digits',
+                    ),
+                    keyboardType: TextInputType.phone,
+                    maxLength: _getMaxDigits(_countryCodeController.text),
+                    onChanged: (value) {
+                      final fullPhone = '${_countryCodeController.text}${_phoneNumberController.text}';
+                      ref.read(checkoutPhoneProvider.notifier).state = fullPhone;
+                      _updateCheckoutData(settings);
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
 
@@ -105,7 +147,7 @@ class _LoyaltyCheckoutWidgetState extends ConsumerState<LoyaltyCheckoutWidget> {
             ),
 
             // Show loyalty profile if enabled AND phone+car plate entered
-            if (settings.enabled && _phoneController.text.isNotEmpty && _carPlateController.text.isNotEmpty) ...[
+            if (settings.enabled && _phoneNumberController.text.isNotEmpty && _carPlateController.text.isNotEmpty) ...[
               const SizedBox(height: 16),
               _buildCustomerProfileCard(settings),
             ],
@@ -116,8 +158,8 @@ class _LoyaltyCheckoutWidgetState extends ConsumerState<LoyaltyCheckoutWidget> {
   }
 
   Widget _buildCustomerProfileCard(LoyaltySettings settings) {
-    final phone = _phoneController.text.trim();
-    if (phone.isEmpty) return const SizedBox();
+    final phone = '${_countryCodeController.text}${_phoneNumberController.text}'.trim();
+    if (phone.isEmpty || _phoneNumberController.text.isEmpty) return const SizedBox();
 
     final profileAsync = ref.watch(customerProfileProvider(phone));
 
@@ -398,7 +440,7 @@ class _LoyaltyCheckoutWidgetState extends ConsumerState<LoyaltyCheckoutWidget> {
   }
 
   void _updateCheckoutData(LoyaltySettings settings) {
-    final phone = _phoneController.text.trim();
+    final phone = '${_countryCodeController.text}${_phoneNumberController.text}'.trim();
     final carPlate = _carPlateController.text.trim();
     final pointsToUse = int.tryParse(_pointsController.text) ?? 0;
     final discount = settings.calculateDiscount(pointsToUse);

@@ -437,14 +437,14 @@ class _OrderTile extends ConsumerWidget {
               // Top row: Order # + Car plate (PROMINENT) + Time + Status
               Row(
                 children: [
-                  // Order number
+                  // Order number (small font)
                   Text(
-                    '#${order.id.substring(0, 8).toUpperCase()}',
+                    order.orderNo,
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: onSurface.withOpacity(0.7),
-                      letterSpacing: 0.5,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: onSurface.withOpacity(0.6),
+                      letterSpacing: 0.3,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -620,7 +620,7 @@ class _OrderTile extends ConsumerWidget {
                 Row(
                   children: [
                     Text(
-                      'Order #${o.id.substring(0, 8).toUpperCase()}',
+                      'Order ${o.orderNo}',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
