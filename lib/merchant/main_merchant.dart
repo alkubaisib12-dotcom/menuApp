@@ -191,7 +191,7 @@ class _MerchantShellState extends ConsumerState<_MerchantShell> {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const SettingsPage(),
+                        builder: (_) => SettingsPage(),
                       ),
                     );
                   },
