@@ -597,10 +597,10 @@ Center(
                         ),
                       ],
                     ),
-                    child: productImageUrl.isNotEmpty
+                    child: (productImageUrl?.isNotEmpty ?? false)
                         ? ClipOval(
                             child: Image.network(
-                              productImageUrl,
+                              productImageUrl!,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => const Icon(Icons.shopping_bag_outlined),
                             ),
