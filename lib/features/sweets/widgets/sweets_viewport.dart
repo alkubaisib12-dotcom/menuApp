@@ -547,6 +547,9 @@ Center(
     await Haptics.light();
     if (overlay == null || !mounted) return;
 
+    // Get product image for animation
+    final productImageUrl = sweet.imageUrl;
+
     final start = _centerOfKey(_activeImageKey);
     final end = _centerOfKey(widget.cartBadgeKey);
     if (start == null || end == null) return;
@@ -556,14 +559,14 @@ Center(
 
     final controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 420),
+      duration: const Duration(milliseconds: 600), // Smoother, slightly longer
     );
     final curve =
         CurvedAnimation(parent: controller, curve: Curves.easeInOutCubic);
 
     final tweenX = Tween<double>(begin: start.dx, end: end.dx);
     final tweenY = Tween<double>(begin: start.dy, end: end.dy - 8);
-    final sizeTween = Tween<double>(begin: 48, end: 16);
+    final sizeTween = Tween<double>(begin: 64, end: 20); // Larger start size for better visibility
 
     final entry = OverlayEntry(builder: (ctx) {
       final onSurface = Theme.of(ctx).colorScheme.onSurface;
@@ -586,11 +589,26 @@ Center(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: onSurface.withOpacity(0.12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ],
                     ),
-                    child: const FittedBox(
-                      fit: BoxFit.cover,
-                      child: Icon(Icons.shopping_bag_outlined),
-                    ),
+                    child: productImageUrl.isNotEmpty
+                        ? ClipOval(
+                            child: Image.network(
+                              productImageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.shopping_bag_outlined),
+                            ),
+                          )
+                        : const FittedBox(
+                            fit: BoxFit.cover,
+                            child: Icon(Icons.shopping_bag_outlined),
+                          ),
                   ),
                 ),
               ),
