@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/branding/branding_providers.dart';
+import '../../core/config/email_config.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -131,6 +132,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       appBar: AppBar(
         title: const Text('Settings'),
         backgroundColor: theme.colorScheme.primaryContainer,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: 'Close',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           if (_isSaving)
             const Center(
@@ -153,6 +159,83 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Email Service Configuration Warning
+                if (!EmailConfig.isConfigured)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      border: Border.all(color: Colors.orange.shade200),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded,
+                                color: Colors.orange.shade700, size: 24),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Email Service Not Configured',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: Colors.orange.shade900,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'To enable email notifications, you need to:',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.orange.shade900,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '1. Deploy the Cloudflare Worker from /cloudflare-worker/',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.orange.shade800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '2. Set RESEND_API_KEY environment variable',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.orange.shade800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '3. Update workerUrl in lib/core/config/email_config.dart',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.orange.shade800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'See cloudflare-worker/README.md for detailed instructions.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.orange.shade700,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 // Email Notifications Section
                 Card(
                   child: Padding(
@@ -187,16 +270,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         // Enable/Disable toggle
                         SwitchListTile(
                           value: _emailNotificationsEnabled,
-                          onChanged: (value) {
-                            setState(() {
-                              _emailNotificationsEnabled = value;
-                            });
-                          },
+                          onChanged: EmailConfig.isConfigured
+                              ? (value) {
+                                  setState(() {
+                                    _emailNotificationsEnabled = value;
+                                  });
+                                }
+                              : null,
                           title: const Text('Enable Email Notifications'),
                           subtitle: Text(
-                            _emailNotificationsEnabled
-                                ? 'You will receive emails for new orders'
-                                : 'Email notifications are disabled',
+                            !EmailConfig.isConfigured
+                                ? 'Email service must be configured first'
+                                : (_emailNotificationsEnabled
+                                    ? 'You will receive emails for new orders'
+                                    : 'Email notifications are disabled'),
                           ),
                           secondary: Icon(
                             _emailNotificationsEnabled
@@ -217,7 +304,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             border: const OutlineInputBorder(),
                             helperText:
                                 'Order notifications and reports will be sent to this email',
-                            enabled: _emailNotificationsEnabled,
+                            enabled: EmailConfig.isConfigured && _emailNotificationsEnabled,
                           ),
                           keyboardType: TextInputType.emailAddress,
                         ),

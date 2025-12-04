@@ -193,6 +193,7 @@ class _MerchantShellState extends ConsumerState<_MerchantShell> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => SettingsPage(),
+                        fullscreenDialog: true,
                       ),
                     );
                   },
