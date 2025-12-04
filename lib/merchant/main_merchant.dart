@@ -214,26 +214,48 @@ class _MerchantShellState extends ConsumerState<_MerchantShell> {
               ],
             ),
       body: pages[_i],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _i,
-        onDestinationSelected: (v) => setState(() => _i = v),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.inventory_2_outlined),
-            selectedIcon: Icon(Icons.inventory_2),
-            label: 'Products',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Orders',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.analytics_outlined),
-            selectedIcon: Icon(Icons.analytics),
-            label: 'Analytics',
-          ),
-        ],
+      bottomNavigationBar: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('merchants/${widget.merchantId}/branches/${widget.branchId}/orders')
+            .where('status', isEqualTo: 'pending')
+            .snapshots(),
+        builder: (context, snapshot) {
+          final pendingCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+
+          return NavigationBar(
+            selectedIndex: _i,
+            onDestinationSelected: (v) => setState(() => _i = v),
+            destinations: [
+              const NavigationDestination(
+                icon: Icon(Icons.inventory_2_outlined),
+                selectedIcon: Icon(Icons.inventory_2),
+                label: 'Products',
+              ),
+              NavigationDestination(
+                icon: Badge(
+                  isLabelVisible: pendingCount > 0,
+                  label: Text(pendingCount.toString()),
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  child: const Icon(Icons.receipt_long_outlined),
+                ),
+                selectedIcon: Badge(
+                  isLabelVisible: pendingCount > 0,
+                  label: Text(pendingCount.toString()),
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  child: const Icon(Icons.receipt_long),
+                ),
+                label: 'Orders',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.analytics_outlined),
+                selectedIcon: Icon(Icons.analytics),
+                label: 'Analytics',
+              ),
+            ],
+          );
+        },
       ),
     );
   }

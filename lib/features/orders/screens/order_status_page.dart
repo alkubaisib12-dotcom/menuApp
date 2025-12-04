@@ -45,13 +45,7 @@ class OrderStatusPage extends ConsumerWidget {
             order.status == OrderStatus.cancelled;
 
         return PopScope(
-          canPop: !finished,
-          onPopInvoked: (didPop) {
-            if (!didPop && finished) {
-              // When order is finished, navigate back to menu (pop to root)
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            }
-          },
+          canPop: false, // Prevent going back after confirming order
           child: Scaffold(
             appBar: AppBar(
               title: const Text('Order Status'),
