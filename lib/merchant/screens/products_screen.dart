@@ -37,20 +37,14 @@ class ProductsScreen extends StatelessWidget {
       stream: roleDoc,
       builder: (context, roleSnap) {
         if (roleSnap.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Center(child: CircularProgressIndicator());
         }
         if (roleSnap.hasError) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Products')),
-            body: Center(child: Text('Failed to verify access: ${roleSnap.error}')),
-          );
+          return Center(child: Text('Failed to verify access: ${roleSnap.error}'));
         }
         if (!roleSnap.hasData || !roleSnap.data!.exists) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Products')),
-            body: const Center(
-              child: Text('No access. Ask the owner to grant your role.'),
-            ),
+          return const Center(
+            child: Text('No access. Ask the owner to grant your role.'),
           );
         }
 
@@ -61,43 +55,61 @@ class ProductsScreen extends StatelessWidget {
             .orderBy('sort', descending: false);
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Products'),
-            actions: [
-              IconButton(
-                tooltip: 'Loyalty Program',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const LoyaltySettingsPage()),
-                ),
-                icon: const Icon(Icons.card_giftcard_outlined),
-              ),
-              IconButton(
-                tooltip: 'Branding',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const BrandingAdminPage()),
-                ),
-                icon: const Icon(Icons.palette_outlined),
-              ),
-              IconButton(
-                tooltip: 'Categories',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CategoryAdminPage()),
-                ),
-                icon: const Icon(Icons.category_outlined),
-              ),
-              IconButton(
-                tooltip: 'Sign out',
-                onPressed: () => FirebaseAuth.instance.signOut(),
-                icon: const Icon(Icons.logout),
-              ),
-            ],
-          ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _openEditor(context, merchantId, branchId, null),
             label: const Text('Add product'),
             icon: const Icon(Icons.add),
           ),
-          body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          body: Column(
+            children: [
+              // Action buttons bar (moved from AppBar)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 8),
+                    const Text('Quick Actions:', style: TextStyle(fontWeight: FontWeight.w500)),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      tooltip: 'Loyalty Program',
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const LoyaltySettingsPage()),
+                      ),
+                      icon: const Icon(Icons.card_giftcard_outlined),
+                    ),
+                    IconButton(
+                      tooltip: 'Branding',
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const BrandingAdminPage()),
+                      ),
+                      icon: const Icon(Icons.palette_outlined),
+                    ),
+                    IconButton(
+                      tooltip: 'Categories',
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const CategoryAdminPage()),
+                      ),
+                      icon: const Icon(Icons.category_outlined),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Sign out',
+                      onPressed: () => FirebaseAuth.instance.signOut(),
+                      icon: const Icon(Icons.logout),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: itemsQuery.snapshots(),
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
@@ -158,6 +170,9 @@ class ProductsScreen extends StatelessWidget {
                 },
               );
             },
+                ),
+              ),
+            ],
           ),
         );
       },
