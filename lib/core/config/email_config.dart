@@ -9,8 +9,7 @@ class EmailConfig {
   /// 1. Deploy the worker from /cloudflare-worker/
   /// 2. Copy your worker URL from Cloudflare dashboard
   /// 3. Replace the URL below
-  static const String workerUrl =
-      'https://sweets.alkubaisi1818.workers.dev';
+  static const String workerUrl = 'https://menuapp.alkubaisi1818.workers.dev';
 
   /// Default email for all notifications
   /// All order notifications will be sent to this email
